@@ -21,7 +21,7 @@ VanitySearch运行参数众多，下面就常用的地址搜索情况进行示例说明。
 
 3. ./VanitySearch.exe -stop -gpu 3abc * def * （实际运行时把*前后的空格去掉）
 
-该命令表示搜索以1abc为prefix，中间包含def为suffix的Bitcoin地址。
+该命令表示搜索以3abc为prefix，中间包含def为suffix的Bitcoin地址。
 
 需要说明的是，在只包含prefix的搜索中，支持1开头，3开头及bc1开头的地址搜索；
 
