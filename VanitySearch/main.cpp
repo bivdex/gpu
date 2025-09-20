@@ -20,6 +20,7 @@
 #include "SECP256k1.h"
 #include <fstream>
 #include <string>
+#include <sstream>
 #include <string.h>
 #include <stdexcept>
 #include "hash/sha512.h"
@@ -388,7 +389,7 @@ int main(int argc, char* argv[]) {
   vector<int> gpuId = {0};
   vector<int> gridSize;
   string seed = "";
-  vector<string> prefix;
+  vector<vector<string>> prefix;
   string outputFile = "";
   int nbCPUThread = Timer::getCoreNumber();
   bool tSpecified = false;
@@ -515,7 +516,15 @@ int main(int argc, char* argv[]) {
       a++;
     } else if (strcmp(argv[a], "-i") == 0) {
       a++;
-      parseFile(string(argv[a]),prefix);
+	  std::stringstream ss(argv[a]);
+      std::string item;
+      vector<string> p;
+      while (std::getline(ss, item, ',')) {
+        parseFile(item, p);
+		prefix.push_back(p);
+        printf("Loading input file %s, first element is %s\n", item.c_str(), p[0].c_str());
+        p.clear();
+	  }
       a++;
     } else if (strcmp(argv[a], "-t") == 0) {
       a++;
@@ -533,7 +542,9 @@ int main(int argc, char* argv[]) {
     } else if (strcmp(argv[a], "-h") == 0) {
       printUsage();
     } else if (a == argc - 1) {
-      prefix.push_back(string(argv[a]));
+      vector<string> p;
+	  p.push_back(string(argv[a]));
+      prefix.push_back(p);
       a++;
     } else {
       printf("Unexpected %s argument\n",argv[a]);
@@ -566,9 +577,36 @@ int main(int argc, char* argv[]) {
     searchMode = (startPubKeyCompressed)?SEARCH_COMPRESSED:SEARCH_UNCOMPRESSED;
   }
 
-  VanitySearch *v = new VanitySearch(secp, prefix, seed, searchMode, gpuEnable, stop, outputFile, sse,
-    maxFound, rekey, caseSensitive, startPuKey, paranoiacSeed);
-  v->Search(nbCPUThread,gpuId,gridSize);
+  vector<VanitySearch*> vList;
+  for (int i = 0; i < prefix.size(); i++) {
+      VanitySearch* v = new VanitySearch(secp, prefix[i], seed, searchMode, gpuEnable, stop, outputFile, sse,
+          maxFound, rekey, caseSensitive, startPuKey, paranoiacSeed);
+      printf("initialize vanity search instance with %s.\n\n", prefix[i][0].c_str());
+	  vList.push_back(v);
+  }
+  
+  int attempt = 0;
+  while (true) {
+      attempt++;
+      auto it = std::find_if(vList.begin(), vList.end(), [](VanitySearch* v) { return (v->force_quit == v->endOfSearch); });
+      if (it == vList.end()) {
+          printf("all keys are found in %d attempts!", attempt);
+          break;
+      }
+	  VanitySearch* v = *it;
+      if (v->force_quit) {
+          std::vector<std::string> tempPrefixes = v->inputPrefixes;
+          v->reset(secp, tempPrefixes, seed, searchMode, gpuEnable, stop, outputFile, sse,
+              maxFound, rekey, caseSensitive, startPuKey, paranoiacSeed);
+      }
+	  printf("VanitySearch instance with prefix: %s are running.\n\n", v->inputPrefixes[0].c_str());
+	  v->Search(nbCPUThread, gpuId, gridSize);
+  }
+
+  for (VanitySearch* v : vList) {
+      delete v;
+  }
+  vList.clear();
 
   return 0;
 }
