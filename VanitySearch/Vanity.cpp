@@ -1862,8 +1862,8 @@ void VanitySearch::FindKeyGPU(TH_PARAM *ph) {
     }
 
 	end = time(0);
-    if (difftime(end, start) > 300) {
-		printf("\nTime passed 5 minutes, forcing alternate job.\n\n");
+    if (difftime(end, start) > 60) {
+		printf("\nTime passed 1 minutes, forcing alternate job.\n\n");
 		endOfSearch = true;
 		force_quit = true;
 	}
