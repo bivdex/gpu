@@ -49,6 +49,9 @@
     <ClInclude Include="GPU\GPUWildcard.h">
       <Filter>GPU</Filter>
     </ClInclude>
+    <ClInclude Include="GPU\GPUBech32.h">
+      <Filter>GPU</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GPU\GPUGenerate.cpp">

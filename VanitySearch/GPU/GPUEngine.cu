@@ -33,6 +33,7 @@
 #include "GPUMath.h"
 #include "GPUHash.h"
 #include "GPUBase58.h"
+#include "GPUBech32.h"
 #include "GPUWildcard.h"
 #include "GPUCompute.h"
 
@@ -76,6 +77,12 @@ __global__ void comp_keys_p2sh_pattern(uint32_t mode, prefix_t *pattern, uint64_
   int yPtr = xPtr + 4 * blockDim.x;
   ComputeKeysP2SH(mode, keys + xPtr, keys + yPtr, NULL, (uint32_t *)pattern, maxFound, found);
 
+}
+
+__global__ void comp_keys_bech32_pattern(uint32_t mode, prefix_t* pattern, uint64_t* keys, uint32_t maxFound, uint32_t* found) {
+    int xPtr = (blockIdx.x * blockDim.x) * 8;
+    int yPtr = xPtr + 4 * blockDim.x;
+    ComputeKeysBech32(mode, keys + xPtr, keys + yPtr, NULL, (uint32_t*)pattern, maxFound, found);
 }
 
 //#define FULLCHECK
@@ -474,9 +481,11 @@ bool GPUEngine::callKernel() {
     // P2PKH or BECH32
     if (hasPattern) {
       if (searchType == BECH32) {
+        comp_keys_bech32_pattern << < nbThread / nbThreadPerGroup, nbThreadPerGroup >> >
+            (searchMode, inputPrefix, inputKey, maxFound, outputPrefix);
         // TODO
-        printf("GPUEngine: (TODO) BECH32 not yet supported with wildard\n");
-        return false;
+        // printf("GPUEngine: (TODO) BECH32 not yet supported with wildard\n");
+        // return false;
       }
       comp_keys_pattern << < nbThread / nbThreadPerGroup, nbThreadPerGroup >> >
         (searchMode, inputPrefix, inputKey, maxFound, outputPrefix);
